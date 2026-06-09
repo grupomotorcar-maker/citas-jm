@@ -379,6 +379,7 @@ function parseRow(row) {
     movilidad:         row['Movilidad'] === true || row['Movilidad'] === 'true' || row['Movilidad'] === 'TRUE',
     fechaMovInicio:    String(row['Fecha Mov Inicio'] || ''),
     fechaMovFin:       String(row['Fecha Mov Fin'] || ''),
+    aseguradora:       String(row['Aseguradora'] || ''),
     valorHora:         parseFloat(row['Valor Hora']) || 0,
     nota:              String(row['Nota'] || ''),
     trelloCardId:      row['Trello Card ID'] ? String(row['Trello Card ID']) : null,
@@ -401,6 +402,7 @@ function toRow(c) {
     'Movilidad': c.movilidad ? 'true' : 'false',
     'Fecha Mov Inicio': c.fechaMovInicio || '',
     'Fecha Mov Fin': c.fechaMovFin || '',
+    'Aseguradora': c.aseguradora || '',
     'Valor Hora': c.valorHora || 0, 'Nota': c.nota || '',
     'Trello Card ID': c.trelloCardId || '',
     'Fecha Creación': c.fechaCreacion || new Date().toISOString(),
@@ -596,6 +598,8 @@ async function recargarSheets() {
 // ============================================================
 // TRABAJOS
 // ============================================================
+let busquedaTexto = '';
+
 function renderTrabajos(el) {
   const tabs = [
     { id:'todos', lbl:'Todos' }, { id:'agenda', lbl:'Agenda' },
@@ -607,6 +611,16 @@ function renderTrabajos(el) {
   else if (filtroTab === 'todos') filtered = citas.filter(t => t.estado !== 'listo');
   else filtered = citas.filter(t => t.grupoReparacion === filtroTab && t.estado !== 'listo');
 
+  if (busquedaTexto.trim()) {
+    const q = busquedaTexto.trim().toUpperCase();
+    filtered = filtered.filter(t =>
+      t.matricula.toUpperCase().includes(q) ||
+      (t.cliente || '').toUpperCase().includes(q) ||
+      (t.or ? String(t.or).includes(q) : false) ||
+      (t.aseguradora || '').toUpperCase().includes(q)
+    );
+  }
+
   const prioOrd = { alta:0, media:1, baja:2 };
   filtered = [...filtered].sort((a, b) => {
     const pd = prioOrd[a.prio] - prioOrd[b.prio];
@@ -614,11 +628,28 @@ function renderTrabajos(el) {
   });
 
   el.innerHTML = `
+    <div style="padding:8px 12px 4px">
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none">🔍</span>
+        <input type="text" id="buscador-trabajos" value="${busquedaTexto}"
+          placeholder="Buscar por matrícula, cliente, OR, aseguradora…"
+          oninput="setBusqueda(this.value)"
+          style="width:100%;padding:10px 12px 10px 36px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;background:white">
+        ${busquedaTexto ? `<button onclick="setBusqueda('')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer">×</button>` : ''}
+      </div>
+    </div>
     <div class="tabs">${tabs.map(t => `<button class="tab ${filtroTab===t.id?'active':''}" onclick="setFiltro('${t.id}')">${t.lbl}</button>`).join('')}</div>
-    ${filtered.length === 0 ? '<div class="empty"><p>Sin trabajos en esta categoría</p></div>' : filtered.map(t => renderJobCard(t, false)).join('')}
+    ${filtered.length === 0 ? `<div class="empty"><p>${busquedaTexto ? 'Sin resultados para "'+busquedaTexto+'"' : 'Sin trabajos en esta categoría'}</p></div>` : filtered.map(t => renderJobCard(t, false)).join('')}
     <div style="height:10px"></div>
   `;
+  // Mantener foco en el buscador si estaba activo
+  if (busquedaTexto) {
+    const inp = document.getElementById('buscador-trabajos');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
 }
+
+function setBusqueda(val) { busquedaTexto = val; renderTrabajos(document.getElementById('main')); }
 
 function setFiltro(f) { filtroTab = f; render(); }
 
@@ -629,6 +660,7 @@ function renderJobCard(t, mini) {
   ).join('')}</div>`;
 
   const movBadge = t.movilidad ? `<span class="badge" style="background:#EBF5FB;color:#2E86C1">🚗 Movilidad</span>` : '';
+  const asegBadge = t.aseguradora ? `<span class="badge" style="background:#F4ECF7;color:#6C3483">🏢 ${t.aseguradora}</span>` : '';
 
   return `<div class="job-card prio-${t.prio}" onclick="abrirTrabajo('${t.id}')">
     <div class="job-top">
@@ -642,6 +674,7 @@ function renderJobCard(t, mini) {
       ${t.or ? `<span class="badge" style="background:var(--gray-light);color:var(--text-muted)">OR${t.or}</span>` : ''}
       ${t.mecanico ? `<span class="badge" style="background:#EBF5FB;color:#1A5276">🔧 ${t.mecanico}</span>` : ''}
       ${movBadge}
+      ${asegBadge}
     </div>
     ${(t.hChapa||t.hPintura) ? `<div class="job-hours"><span>Chapa <b>${t.hChapa}h</b></span><span>Pintura <b>${t.hPintura}h</b></span><span>Cabina <b>${t.hCabina}h</b></span>${t.hPresupuestadas ? `<span>Presup. <b>${t.hPresupuestadas}h</b></span>` : ''}</div>` : ''}
     ${t.tipoAveria ? `<div class="job-averia">🔍 ${t.tipoAveria}</div>` : ''}
@@ -709,6 +742,10 @@ function showModalTrabajo(id) {
     <div class="form-group">
       <div class="form-label">Tipo avería</div>
       <input class="form-input" type="text" value="${t.tipoAveria||''}" placeholder="Descripción…" onchange="updateCampo('${id}','tipoAveria',this.value)">
+    </div>
+    <div class="form-group">
+      <div class="form-label">🏢 Compañía aseguradora</div>
+      <input class="form-input" type="text" value="${t.aseguradora||''}" placeholder="Mapfre, AXA, Allianz…" onchange="updateCampo('${id}','aseguradora',this.value)">
     </div>
     <div class="form-group">
       <div class="form-label">Grupo reparación</div>
@@ -808,6 +845,10 @@ function renderNueva(el) {
           <label class="form-label">Tipo de avería</label>
           <input class="form-input" id="f-averia" type="text" placeholder="Ej: Golpe puerta trasera, pintura completa…">
         </div>
+        <div class="form-group">
+          <label class="form-label">🏢 Compañía aseguradora</label>
+          <input class="form-input" id="f-aseguradora" type="text" placeholder="Mapfre, AXA, Allianz…">
+        </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 14px">
         <div class="form-group">
           <label class="form-label">📅 Fecha de entrada</label>
@@ -850,13 +891,14 @@ function renderNueva(el) {
           </div>
         </div>
         <div class="form-row3">
-          <div class="form-group"><label class="form-label">H. Chapa</label><input class="form-input" id="f-hc" type="number" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label class="form-label">H. Chapa</label><input class="form-input" id="f-hc" type="number" min="0" step="0.5" value="0" oninput="autosumarHoras()"></div>
           <div class="form-group"><label class="form-label">H. Pintura</label><input class="form-input" id="f-hp" type="number" min="0" step="0.5" value="0" oninput="estimarCabina()"></div>
-          <div class="form-group"><label class="form-label">H. Cabina</label><input class="form-input" id="f-hcab" type="number" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label class="form-label">H. Cabina</label><input class="form-input" id="f-hcab" type="number" min="0" step="0.5" value="0" oninput="autosumarHoras()"></div>
         </div>
         <div class="form-group">
           <label class="form-label">H. Presupuestadas (total)</label>
-          <input class="form-input" id="f-hpres" type="number" min="0" step="0.5" value="0">
+          <input class="form-input" id="f-hpres" type="number" min="0" step="0.5" value="0" style="background:#f0fff4;font-weight:600">
+          <div class="form-hint">Se calcula automáticamente sumando Chapa + Pintura + Cabina</div>
         </div>
         <div class="form-hint" id="cap-hint"></div>
         <div class="form-group">
@@ -961,6 +1003,16 @@ function onBaremoChange() {
 function estimarCabina() {
   const hp = parseFloat(document.getElementById('f-hp').value) || 0;
   document.getElementById('f-hcab').value = Math.round(hp * RATIO_CAB * 2) / 2;
+  autosumarHoras();
+}
+
+function autosumarHoras() {
+  const hc   = parseFloat(document.getElementById('f-hc')?.value)   || 0;
+  const hp   = parseFloat(document.getElementById('f-hp')?.value)   || 0;
+  const hcab = parseFloat(document.getElementById('f-hcab')?.value) || 0;
+  const total = Math.round((hc + hp + hcab) * 2) / 2;
+  const el = document.getElementById('f-hpres');
+  if (el) el.value = total;
   actualizarCapHint();
 }
 
@@ -991,6 +1043,7 @@ async function confirmarCita() {
   const hcab   = parseFloat(getVal('f-hcab'))  || 0;
   const hpres  = parseFloat(getVal('f-hpres')) || 0;
   const fechaEntrada = getVal('f-fecha') || isoDate(new Date());
+  const aseguradora = getVal('f-aseguradora');
   const movilidad = document.getElementById('f-movilidad')?.checked || false;
   const fechaMovInicio = movilidad ? (getVal('f-mov-inicio') || '') : '';
   const fechaMovFin    = movilidad ? (getVal('f-mov-fin')    || '') : '';
@@ -1013,13 +1066,13 @@ async function confirmarCita() {
     id: uid(), matricula: mat, marca, modelo,
     bastidor: getVal('f-bastidor'), or: getVal('f-or') || null,
     cliente: getVal('f-clinombre'), telefono: getVal('f-clitel'),
-    estado: 'desm', semana: formSemanaVal, fechaEntrada,
+    estado: 'espera', semana: formSemanaVal, fechaEntrada,
     tipoAveria: getVal('f-averia'), grupoReparacion: grupo,
     mecanico: getVal('f-mecanico'),
     hChapa: hc, hPintura: hp, hCabina: hcab, hPresupuestadas: hpres,
     baremo, prio: getVal('f-prio'),
     recambios: document.getElementById('f-rec')?.checked || false,
-    movilidad, fechaMovInicio, fechaMovFin,
+    aseguradora, movilidad, fechaMovInicio, fechaMovFin,
     valorHora: 0, nota,
     trelloCardId: null,
     fechaCreacion: new Date().toISOString(),
