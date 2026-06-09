@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Citas — Joan Motorcar</title>
+<style>
+:root {
+  --blue: #C0392B;
+  --blue-light: #E53935;
+  --blue-pale: #FADBD8;
+  --green: #1E8449;
+  --green-pale: #D5F5E3;
+  --orange: #D35400;
+  --orange-pale: #FDEBD0;
+  --red: #922B21;
+  --red-pale: #F5B7B1;
+  --gray: #566573;
+  --gray-light: #F2F3F4;
+  --gray-pale: #FDFEFE;
+  --border: #D5D8DC;
+  --text: #1C2833;
+  --text-muted: #717D7E;
+  --white: #FFFFFF;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.10);
+  --nav-h: 62px;
+  --header-h: 54px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--gray-light); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; color: var(--text); }
+#app { display: flex; flex-direction: column; height: 100%; max-width: 680px; margin: 0 auto; background: var(--gray-light); position: relative; }
+
+/* HEADER */
+#header { background: var(--blue); color: white; height: var(--header-h); display: flex; align-items: center; padding: 0 16px; gap: 10px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+#header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+#header-sub { font-size: 12px; opacity: 0.8; }
+#btn-back { background: none; border: none; color: white; font-size: 22px; cursor: pointer; padding: 4px 8px 4px 0; display: none; }
+
+/* MAIN */
+#main { flex: 1; overflow-y: auto; padding-bottom: calc(var(--nav-h) + 8px); }
+
+/* BOTTOM NAV */
+#nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 680px; background: white; border-top: 1px solid var(--border); height: var(--nav-h); display: flex; z-index: 100; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--text-muted); padding: 6px 0; transition: color 0.15s; }
+.nav-btn.active { color: var(--blue); }
+.nav-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-btn.active svg { stroke: var(--blue); }
+
+/* CARDS */
+.card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); margin: 10px 12px; padding: 14px; }
+
+/* SECTION TITLE */
+.sec-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px 6px; }
+
+/* CAPACITY BARS */
+.cap-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 12px; }
+.cap-card { background: white; border-radius: var(--radius-sm); padding: 10px; box-shadow: var(--shadow); }
+.cap-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.cap-val { font-size: 18px; font-weight: 600; }
+.cap-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.bar-wrap { margin: 0 12px 4px; }
+.bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+.bar-track { height: 8px; background: var(--gray-light); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s, background 0.4s; }
+.bar-chapa { background: var(--blue-light); }
+.bar-pintura { background: var(--green); }
+.bar-cabina { background: var(--orange); }
+.bar-warn { background: #E67E22; }
+.bar-danger { background: var(--red); }
+
+/* ALERT */
+.alert { margin: 0 12px 4px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+.alert-warn { background: var(--orange-pale); color: var(--orange); border-left: 3px solid var(--orange); }
+.alert-danger { background: var(--red-pale); color: var(--red); border-left: 3px solid var(--red); }
+.alert-ok { background: var(--green-pale); color: var(--green); border-left: 3px solid var(--green); }
+.alert-info { background: var(--blue-pale); color: var(--blue); border-left: 3px solid var(--blue-light); }
+
+/* WEEK NAV */
+.week-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+.week-nav button { background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 14px; font-size: 14px; cursor: pointer; color: var(--text); }
+.week-nav span { font-size: 14px; font-weight: 500; }
+
+/* JOB CARD */
+.job-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); margin: 6px 12px; padding: 12px 14px; border-left: 4px solid var(--border); cursor: pointer; }
+.job-card.prio-alta { border-left-color: var(--red); }
+.job-card.prio-media { border-left-color: var(--blue-light); }
+.job-card.prio-baja { border-left-color: var(--gray); }
+.job-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.job-mat { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+.job-veh { font-size: 13px; color: var(--text-muted); flex: 1; }
+.job-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+.badge-bar-inv { background: #FADBD8; color: #C0392B; }
+.badge-bar-pro { background: #D5F5E3; color: #1E8449; }
+.badge-bar-sol { background: #EBF5FB; color: #2E86C1; }
+.badge-bar-gt  { background: #F4ECF7; color: #7D3C98; }
+.badge-gr-agenda  { background: #D6EAF8; color: #2E86C1; }
+.badge-gr-grua    { background: #FDEDEC; color: #C0392B; font-weight: 600; }
+.badge-gr-pieza   { background: #FEF9E7; color: #D4AC0D; }
+.badge-gr-pintura { background: #FADBD8; color: #C0392B; }
+.badge-gr-otros   { background: #F2F3F4; color: #566573; }
+.job-hours { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.job-hours span b { color: var(--text); font-weight: 600; }
+.job-estado { display: flex; gap: 6px; flex-wrap: wrap; }
+.est-btn { font-size: 12px; padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+.est-btn.active { font-weight: 600; }
+.est-btn.e-espera.active { background: #F2F3F4; color: var(--gray); border-color: var(--gray); }
+.est-btn.e-desm.active   { background: #FADBD8; color: #C0392B; border-color: #C0392B; }
+.est-btn.e-chapa.active  { background: #D6EAF8; color: var(--blue); border-color: var(--blue-light); }
+.est-btn.e-prep.active   { background: #F4ECF7; color: #7D3C98; border-color: #7D3C98; }
+.est-btn.e-cabina.active { background: #FDEBD0; color: var(--orange); border-color: var(--orange); }
+.est-btn.e-listo.active  { background: var(--green-pale); color: var(--green); border-color: var(--green); }
+.job-nota { font-size: 12px; color: var(--orange); margin-top: 6px; }
+.job-averia { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* FILTER TABS */
+.tabs { display: flex; gap: 6px; padding: 8px 12px 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; white-space: nowrap; color: var(--text-muted); }
+.tab.active { background: var(--blue); color: white; border-color: var(--blue); font-weight: 500; }
+
+/* FORM */
+.form-section { padding: 12px 12px 0; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
+.form-input { width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; color: var(--text); background: white; appearance: none; -webkit-appearance: none; outline: none; }
+.form-input:focus { border-color: var(--blue-light); box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
+.form-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.form-hint.warn { color: var(--orange); }
+.btn-primary { width: 100%; padding: 14px; background: var(--blue); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+.btn-primary:active { opacity: 0.85; }
+.btn-danger-sm { background: none; border: none; color: var(--red); font-size: 13px; cursor: pointer; padding: 4px 0; }
+
+/* CLIENT ROW */
+.client-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--gray-light); }
+.client-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-pale); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: var(--blue); flex-shrink: 0; }
+.client-name { font-weight: 500; font-size: 15px; }
+.client-tel  { font-size: 13px; color: var(--text-muted); }
+.client-mat  { font-size: 12px; color: var(--blue); margin-top: 1px; }
+
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 8px 12px; }
+.stat-card { background: white; border-radius: var(--radius-sm); padding: 10px 12px; box-shadow: var(--shadow); }
+.stat-val { font-size: 22px; font-weight: 700; color: var(--blue); }
+.stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+.modal { background: white; border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 680px; max-height: 92vh; overflow-y: auto; padding: 20px 16px calc(var(--nav-h) + 20px); }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+.modal-close { background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; }
+
+/* LOADING */
+.loading { text-align: center; padding: 80px 24px; color: var(--text-muted); }
+.spinner { font-size: 36px; display: block; margin-bottom: 12px; animation: spin 1.5s linear infinite; display: inline-block; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* EMPTY */
+.empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.empty p { font-size: 14px; }
+
+/* SHEETS BANNER */
+.sheets-banner { margin: 8px 12px; padding: 10px 14px; background: #E8F5E9; border-radius: var(--radius-sm); border-left: 3px solid #43A047; font-size: 12px; color: #2E7D32; }
+.no-sheets-banner { margin: 8px 12px; padding: 10px 14px; background: #FFF3E0; border-radius: var(--radius-sm); border-left: 3px solid #FB8C00; font-size: 12px; color: #E65100; }
+
+@media (min-width: 520px) { .form-row3 { grid-template-columns: repeat(3,1fr); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <button id="btn-back" onclick="goBack()">‹</button>
+    <h1 id="header-title">Joan Motorcar</h1>
+    <span id="header-sub">Chapa &amp; Pintura</span>
+  </div>
+  <div id="main"></div>
+  <nav id="nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" id="nav-trabajos" onclick="showView('trabajos')">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Trabajos
+    </button>
+    <button class="nav-btn" id="nav-nueva" onclick="showView('nueva')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Nueva
+    </button>
+    <button class="nav-btn" id="nav-vehiculos" onclick="showView('vehiculos')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Vehículos
+    </button>
+  </nav>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVXj2KbDzEaWtg9s0awK5SlmtRnOECVR7768ILFrbt8kRI1bNkio6ZpBAi63y4Uu_9/exec';
+
+const SHEET_TAB = 'CITAS_JM';
+
+// ============================================================
+// CAPACIDADES SEMANALES (horas)
+// ============================================================
+const CAP = { chapa: 70, pintura: 47, cabina: 35 };
+const RATIO_CAB = 0.35;
+
+// ============================================================
+// TRELLO
+// ============================================================
+const TRELLO_KEY      = '1f40e23c13b68f9ea4d04e03cd60ef2c';
+const TRELLO_TOKEN    = 'ATTA76af67ad064a04ece125dbe6ed7f2f5fb373a624eacdad26f76aac96f6009accC58A87D2';
+const TRELLO_BOARD_ID = 'r2eSFTPp';
+const TRELLO_LIST_IDS = {
+  espera: '5ec7a6e3da28ec5348efff6d',
+  desm:   '5ec7a6e34e24d756a157e0eb',
+  chapa:  '5f903376f063be85711fde2d',
+  prep:   '5ec7b56efce3a8043a84137b',
+  cabina: '5ec7a6e38711b56534251f5c',
+  listo:  '5ec7cf721bd07f2f82ea9d1a',
+};
+
+// ============================================================
+// ETIQUETAS
+// ============================================================
+const grupoLbl = {
+  agenda:       'Agenda',
+  grua:         '🔴 Grúa / Siniestro',
+  pieza_fuera:  'Pieza fuera',
+  solo_pintura: 'Solo pintura',
+  otros:        'Otros',
+};
+const grupoClass = {
+  agenda:       'badge-gr-agenda',
+  grua:         'badge-gr-grua',
+  pieza_fuera:  'badge-gr-pieza',
+  solo_pintura: 'badge-gr-pintura',
+  otros:        'badge-gr-otros',
+};
+const barLbl    = { pro: 'Propio', sol: 'Solera', gt: 'GT Estimate', inv: '⚠ Inventado' };
+const barClass2 = { pro: 'badge-bar-pro', sol: 'badge-bar-sol', gt: 'badge-bar-gt', inv: 'badge-bar-inv' };
+const estLbl    = { espera: 'Espera', desm: 'Desm/Montar', chapa: 'En chapa', prep: 'Preparación', cabina: 'Cabina', listo: '✓ Listo' };
+
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let citas        = [];
+let isLoading    = false;
+let trelloStatus = '';
+let trelloSyncing = false;
+let _trelloListMap = {};
+let _trelloRevMap  = {};
+
+const USE_SHEETS = () => SCRIPT_URL.length > 10;
+
+// ============================================================
+// UTILS
+// ============================================================
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function getSemanaISO(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return d.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+function semanaLabel(iso) {
+  const [year, w] = iso.split('-W');
+  const simple = new Date(parseInt(year), 0, 1 + (parseInt(w) - 1) * 7);
+  const day = simple.getDay();
+  const lun = new Date(simple); lun.setDate(simple.getDate() + (day <= 1 ? 1 - day : 8 - day));
+  const vie = new Date(lun); vie.setDate(lun.getDate() + 4);
+  const opts = { day: 'numeric', month: 'short' };
+  return `Sem ${w} · ${lun.toLocaleDateString('es', opts)} – ${vie.toLocaleDateString('es', opts)}`;
+}
+
+function offsetSemana(iso, delta) {
+  const [year, w] = iso.split('-W');
+  const d = new Date(parseInt(year), 0, 1 + (parseInt(w) - 1) * 7 + 3);
+  d.setDate(d.getDate() + delta * 7);
+  return getSemanaISO(d);
+}
+
+// ============================================================
+// LOCAL STORAGE
+// ============================================================
+function lLoad(key, def) {
+  try { return JSON.parse(localStorage.getItem('jm_' + key)) || def; } catch(e) { return def; }
+}
+function lSave(key, val) { localStorage.setItem('jm_' + key, JSON.stringify(val)); }
+
+// ============================================================
+// SHEETS DATA MAPPING
+// ============================================================
+function parseRow(row) {
+  return {
+    id:              String(row['ID'] || ''),
+    matricula:       String(row['Matrícula'] || '').toUpperCase(),
+    marca:           String(row['Marca'] || ''),
+    modelo:          String(row['Modelo'] || ''),
+    bastidor:        String(row['Bastidor'] || ''),
+    or:              row['OR'] ? String(row['OR']) : null,
+    cliente:         String(row['Cliente'] || ''),
+    telefono:        String(row['Teléfono'] || ''),
+    estado:          String(row['Estado'] || 'espera'),
+    semana:          String(row['Semana'] || getSemanaISO(new Date())),
+    tipoAveria:      String(row['Tipo Avería'] || ''),
+    grupoReparacion: String(row['Grupo Reparación'] || 'agenda'),
+    mecanico:        String(row['Mecánico'] || ''),
+    hChapa:          parseFloat(row['H.Chapa']) || 0,
+    hPintura:        parseFloat(row['H.Pintura']) || 0,
+    hCabina:         parseFloat(row['H.Cabina']) || 0,
+    hPresupuestadas: parseFloat(row['H.Presupuestadas']) || 0,
+    baremo:          String(row['Baremo'] || 'pro'),
+    prio:            String(row['Prioridad'] || 'media'),
+    recambios:       row['Recambios'] === true || row['Recambios'] === 'true' || row['Recambios'] === 'TRUE',
+    valorHora:       parseFloat(row['Valor Hora']) || 0,
+    nota:            String(row['Nota'] || ''),
+    trelloCardId:    row['Trello Card ID'] ? String(row['Trello Card ID']) : null,
+    fechaCreacion:   String(row['Fecha Creación'] || new Date().toISOString()),
+    fechaModificacion: String(row['Fecha Modificación'] || new Date().toISOString()),
+  };
+}
+
+function toRow(c) {
+  return {
+    'ID':               c.id,
+    'Matrícula':        c.matricula,
+    'Marca':            c.marca,
+    'Modelo':           c.modelo,
+    'Bastidor':         c.bastidor || '',
+    'OR':               c.or || '',
+    'Cliente':          c.cliente || '',
+    'Teléfono':         c.telefono || '',
+    'Estado':           c.estado,
+    'Semana':           c.semana,
+    'Tipo Avería':      c.tipoAveria || '',
+    'Grupo Reparación': c.grupoReparacion || '',
+    'Mecánico':         c.mecanico || '',
+    'H.Chapa':          c.hChapa || 0,
+    'H.Pintura':        c.hPintura || 0,
+    'H.Cabina':         c.hCabina || 0,
+    'H.Presupuestadas': c.hPresupuestadas || 0,
+    'Baremo':           c.baremo,
+    'Prioridad':        c.prio,
+    'Recambios':        c.recambios ? 'true' : 'false',
+    'Valor Hora':       c.valorHora || 0,
+    'Nota':             c.nota || '',
+    'Trello Card ID':   c.trelloCardId || '',
+    'Fecha Creación':   c.fechaCreacion || new Date().toISOString(),
+    'Fecha Modificación': new Date().toISOString(),
+  };
+}
+
+// ============================================================
+// SHEETS API
+// ============================================================
+async function sheetsLoad() {
+  if (!USE_SHEETS()) {
+    citas = lLoad('citas', []);
+    return;
+  }
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=getAll&sheet=${SHEET_TAB}`);
+    const json = await res.json();
+    if (json.ok) {
+      citas = json.data.map(parseRow);
+      lSave('citas', citas);
+    }
+  } catch(e) {
+    console.warn('Sheets load error — usando caché local:', e);
+    citas = lLoad('citas', []);
+  }
+}
+
+async function sheetsSave(cita) {
+  cita.fechaModificacion = new Date().toISOString();
+  const idx = citas.findIndex(c => c.id === cita.id);
+  if (idx >= 0) citas[idx] = cita; else citas.push(cita);
+  lSave('citas', citas);
+  if (!USE_SHEETS()) return;
+  const action = idx >= 0 ? 'update' : 'create';
+  try {
+    const url = SCRIPT_URL + '?action=' + action + '&sheet=' + encodeURIComponent(SHEET_TAB) + '&id=' + encodeURIComponent(cita.id) + '&data=' + encodeURIComponent(JSON.stringify(toRow(cita)));
+    await fetch(url);
+  } catch(e) { console.warn('Sheets save error:', e); }
+}
+
+async function sheetsDelete(id) {
+  citas = citas.filter(c => c.id !== id);
+  lSave('citas', citas);
+  if (!USE_SHEETS()) return;
+  try {
+    await fetch(SCRIPT_URL + '?action=delete&id=' + encodeURIComponent(id) + '&sheet=' + encodeURIComponent(SHEET_TAB));
+  } catch(e) { console.warn('Sheets delete error:', e); }
+}
+
+// ============================================================
+// LÓGICA DE NEGOCIO
+// ============================================================
+function getCitaByMat(mat) {
+  return citas
+    .filter(c => c.matricula === mat.toUpperCase())
+    .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))[0] || null;
+}
+
+function calcCapacidad(semana) {
+  const act = citas.filter(t => t.semana === semana && t.estado !== 'listo');
+  return {
+    hChapa:   act.reduce((s, t) => s + (t.hChapa   || 0), 0),
+    hPintura: act.reduce((s, t) => s + (t.hPintura || 0), 0),
+    hCabina:  act.reduce((s, t) => s + (t.hCabina  || 0), 0),
+  };
+}
+
+function pct(used, cap) { return Math.min(120, Math.round(used / cap * 100)); }
+
+function barFillClass(fill) {
+  if (fill >= 100) return 'bar-danger';
+  if (fill >= 80)  return 'bar-warn';
+  return '';
+}
+
+function estadoColor(e) {
+  return { espera:'#95A5A6', desm:'#C0392B', chapa:'#E53935', prep:'#7D3C98', cabina:'#D35400', listo:'#1E8449' }[e] || '#95A5A6';
+}
+
+function buscarSemanaLibre(hc, hp, hcab, desde) {
+  let sem = desde;
+  for (let i = 0; i < 12; i++) {
+    const cap = calcCapacidad(sem);
+    if ((cap.hChapa+hc) <= CAP.chapa && (cap.hPintura+hp) <= CAP.pintura && (cap.hCabina+hcab) <= CAP.cabina) return sem;
+    sem = offsetSemana(sem, 1);
+  }
+  return null;
+}
+
+// ============================================================
+// VISTAS
+// ============================================================
+let currentView  = 'dashboard';
+let semanaActual = getSemanaISO(new Date());
+let filtroTab    = 'todos';
+
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav-' + view);
+  if (nb) nb.classList.add('active');
+  render();
+}
+
+function render() {
+  const main = document.getElementById('main');
+  const titles = { dashboard:'Dashboard', trabajos:'Trabajos', nueva:'Nueva cita', vehiculos:'Vehículos' };
+  document.getElementById('header-title').textContent = titles[currentView] || 'Joan Motorcar';
+  document.getElementById('btn-back').style.display = 'none';
+  if (isLoading)                        { renderLoading(main); return; }
+  if (currentView === 'dashboard')      renderDashboard(main);
+  else if (currentView === 'trabajos')  renderTrabajos(main);
+  else if (currentView === 'nueva')     renderNueva(main);
+  else if (currentView === 'vehiculos') renderVehiculos(main);
+}
+
+function renderLoading(el) {
+  el.innerHTML = `<div class="loading"><span class="spinner">⏳</span><p>Cargando desde Google Sheets…</p></div>`;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(el) {
+  const cap  = calcCapacidad(semanaActual);
+  const pc   = pct(cap.hChapa,   CAP.chapa);
+  const pp   = pct(cap.hPintura, CAP.pintura);
+  const pcab = pct(cap.hCabina,  CAP.cabina);
+  const semWorks = citas.filter(t => t.semana === semanaActual && t.estado !== 'listo');
+  const invBad   = citas.filter(t => t.baremo === 'inv' && t.estado !== 'listo');
+
+  const alertas = [];
+  if (pcab >= 100) alertas.push({ tipo:'danger', msg:`Cabina saturada (${cap.hCabina}h / ${CAP.cabina}h) — sin hueco` });
+  else if (pcab >= 80) alertas.push({ tipo:'warn', msg:`Cabina al ${pcab}% — quedan ${Math.round((CAP.cabina-cap.hCabina)*2)/2}h` });
+  if (pc >= 100) alertas.push({ tipo:'danger', msg:`Chapa saturada (${cap.hChapa}h / ${CAP.chapa}h)` });
+  if (invBad.length) alertas.push({ tipo:'warn', msg:`${invBad.length} trabajo(s) con baremo inventado — negociar al cierre` });
+  if (!alertas.length) alertas.push({ tipo:'ok', msg:'Taller en orden esta semana' });
+
+  const sheetsBanner = USE_SHEETS()
+    ? `<div class="sheets-banner">☁️ Conectado a Google Sheets · todos los dispositivos sincronizados</div>`
+    : `<div class="no-sheets-banner">⚠️ Usando memoria local — configura SCRIPT_URL para sincronizar entre dispositivos</div>`;
+
+  el.innerHTML = `
+    ${sheetsBanner}
+    <div class="week-nav">
+      <button onclick="cambiarSemana(-1)">‹ Anterior</button>
+      <span>${semanaLabel(semanaActual)}</span>
+      <button onclick="cambiarSemana(1)">Siguiente ›</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 12px 6px">
+      <span id="trello-status" style="font-size:11px;color:var(--text-muted)">${trelloStatus || ''}</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="recargarSheets()" style="font-size:12px;padding:4px 12px;border:1px solid var(--border);border-radius:20px;background:white;color:var(--text-muted);cursor:pointer">↻ Sheets</button>
+        <button onclick="trelloSync()"     style="font-size:12px;padding:4px 12px;border:1px solid var(--border);border-radius:20px;background:white;color:var(--text-muted);cursor:pointer">↻ Trello</button>
+      </div>
+    </div>
+    ${alertas.map(a => `<div class="alert alert-${a.tipo}">${a.msg}</div>`).join('')}
+    <div class="cap-grid">
+      <div class="cap-card">
+        <div class="cap-label">Chapa</div>
+        <div class="cap-val" style="color:${pc>=100?'var(--red)':pc>=80?'var(--orange)':'var(--blue)'}">${cap.hChapa}h</div>
+        <div class="cap-sub">de ${CAP.chapa}h · ${pc}%</div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-label">Pintura</div>
+        <div class="cap-val" style="color:${pp>=100?'var(--red)':pp>=80?'var(--orange)':'var(--green)'}">${cap.hPintura}h</div>
+        <div class="cap-sub">de ${CAP.pintura}h · ${pp}%</div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-label">Cabina</div>
+        <div class="cap-val" style="color:${pcab>=100?'var(--red)':pcab>=80?'var(--orange)':'var(--orange)'}">${cap.hCabina}h</div>
+        <div class="cap-sub">de ${CAP.cabina}h · ${pcab}%</div>
+      </div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span>Chapa</span><span>${pc}%</span></div>
+      <div class="bar-track"><div class="bar-fill bar-chapa ${barFillClass(pc)}" style="width:${Math.min(100,pc)}%"></div></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span>Pintura</span><span>${pp}%</span></div>
+      <div class="bar-track"><div class="bar-fill bar-pintura ${barFillClass(pp)}" style="width:${Math.min(100,pp)}%"></div></div>
+    </div>
+    <div class="bar-wrap" style="margin-bottom:10px">
+      <div class="bar-label"><span>Cabina</span><span>${pcab}%</span></div>
+      <div class="bar-track"><div class="bar-fill bar-cabina ${barFillClass(pcab)}" style="width:${Math.min(100,pcab)}%"></div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val">${citas.filter(t=>!['listo','espera'].includes(t.estado)).length}</div>
+        <div class="stat-lbl">En marcha</div>
+      </div>
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val" style="color:#7D3C98">${citas.filter(t=>t.estado==='prep').length}</div>
+        <div class="stat-lbl">En preparación</div>
+      </div>
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val" style="color:#D35400">${citas.filter(t=>t.estado==='cabina').length}</div>
+        <div class="stat-lbl">En cabina</div>
+      </div>
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val" style="color:#E53935">${citas.filter(t=>t.estado==='chapa').length}</div>
+        <div class="stat-lbl">En chapa</div>
+      </div>
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val" style="color:#C0392B">${citas.filter(t=>t.estado==='desm').length}</div>
+        <div class="stat-lbl">Desm/Montar</div>
+      </div>
+      <div class="stat-card" onclick="setFiltro('todos');showView('trabajos')" style="cursor:pointer">
+        <div class="stat-val" style="color:#566573">${citas.filter(t=>t.estado==='espera').length}</div>
+        <div class="stat-lbl">En espera</div>
+      </div>
+    </div>
+    <div class="sec-title">Trabajos de esta semana (${semWorks.length})</div>
+    ${semWorks.length === 0
+      ? '<div class="empty"><p>Sin trabajos esta semana</p></div>'
+      : semWorks.map(t => renderJobCard(t, true)).join('')}
+  `;
+}
+
+function cambiarSemana(d) { semanaActual = offsetSemana(semanaActual, d); render(); }
+
+async function recargarSheets() {
+  isLoading = true; render();
+  await sheetsLoad();
+  isLoading = false; render();
+}
+
+// ============================================================
+// TRABAJOS
+// ============================================================
+function renderTrabajos(el) {
+  const tabs = [
+    { id:'todos',        lbl:'Todos' },
+    { id:'agenda',       lbl:'Agenda' },
+    { id:'grua',         lbl:'Grúa/Sint.' },
+    { id:'pieza_fuera',  lbl:'Pieza fuera' },
+    { id:'solo_pintura', lbl:'Solo pintura' },
+    { id:'otros',        lbl:'Otros' },
+    { id:'listo',        lbl:'✓ Listos' },
+  ];
+
+  let filtered;
+  if (filtroTab === 'listo') filtered = citas.filter(t => t.estado === 'listo');
+  else if (filtroTab === 'todos') filtered = citas.filter(t => t.estado !== 'listo');
+  else filtered = citas.filter(t => t.grupoReparacion === filtroTab && t.estado !== 'listo');
+
+  const prioOrd = { alta:0, media:1, baja:2 };
+  filtered = [...filtered].sort((a, b) => {
+    const pd = prioOrd[a.prio] - prioOrd[b.prio];
+    return pd !== 0 ? pd : (b.valorHora||0) - (a.valorHora||0);
+  });
+
+  el.innerHTML = `
+    <div class="tabs">
+      ${tabs.map(t => `<button class="tab ${filtroTab===t.id?'active':''}" onclick="setFiltro('${t.id}')">${t.lbl}</button>`).join('')}
+    </div>
+    ${filtered.length === 0
+      ? '<div class="empty"><p>Sin trabajos en esta categoría</p></div>'
+      : filtered.map(t => renderJobCard(t, false)).join('')}
+    <div style="height:10px"></div>
+  `;
+}
+
+function setFiltro(f) { filtroTab = f; render(); }
+
+function renderJobCard(t, mini) {
+  const estados = ['espera','desm','chapa','prep','cabina','listo'];
+  const estBtns = mini ? '' : `<div class="job-estado">${estados.map(e =>
+    `<button class="est-btn e-${e} ${t.estado===e?'active':''}" onclick="cambiarEstado('${t.id}','${e}',event)">${estLbl[e]}</button>`
+  ).join('')}</div>`;
+
+  return `<div class="job-card prio-${t.prio}" onclick="abrirTrabajo('${t.id}')">
+    <div class="job-top">
+      <span class="job-mat">${t.matricula||'?'}</span>
+      <span class="job-veh">${t.marca} ${t.modelo}${t.cliente ? ' · '+t.cliente : ''}</span>
+      <span class="badge ${barClass2[t.baremo]||''}">${barLbl[t.baremo]||t.baremo}</span>
+    </div>
+    <div class="job-badges">
+      ${t.grupoReparacion ? `<span class="badge ${grupoClass[t.grupoReparacion]||''}">${grupoLbl[t.grupoReparacion]||t.grupoReparacion}</span>` : ''}
+      <span class="badge" style="background:${estadoColor(t.estado)};color:white">${estLbl[t.estado]}</span>
+      ${t.or ? `<span class="badge" style="background:var(--gray-light);color:var(--text-muted)">OR${t.or}</span>` : ''}
+      ${t.mecanico ? `<span class="badge" style="background:#EBF5FB;color:#1A5276">🔧 ${t.mecanico}</span>` : ''}
+    </div>
+    ${(t.hChapa||t.hPintura) ? `<div class="job-hours"><span>Chapa <b>${t.hChapa}h</b></span><span>Pintura <b>${t.hPintura}h</b></span><span>Cabina <b>${t.hCabina}h</b></span>${t.hPresupuestadas ? `<span>Presup. <b>${t.hPresupuestadas}h</b></span>` : ''}</div>` : ''}
+    ${t.tipoAveria ? `<div class="job-averia">🔍 ${t.tipoAveria}</div>` : ''}
+    ${estBtns}
+    ${t.recambios ? `<div class="job-nota">⚠ Pendiente recambios</div>` : ''}
+    ${t.nota ? `<div class="job-nota">${t.nota}</div>` : ''}
+    ${!mini ? (t.trelloCardId
+      ? `<span style="font-size:11px;color:#27AE60;display:block;margin-top:6px">✓ En Trello</span>`
+      : `<button onclick="event.stopPropagation();crearEnTrelloCard('${t.id}')" style="margin-top:8px;padding:6px 12px;background:#0052CC;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;width:100%">🃏 Crear en Trello</button>`)
+    : ''}
+  </div>`;
+}
+
+function cambiarEstado(id, est, event) {
+  event.stopPropagation();
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  t.estado = est;
+  sheetsSave(t);
+  render();
+  trelloMoverTarjeta(t);
+}
+
+function abrirTrabajo(id) { showModalTrabajo(id); }
+
+// ============================================================
+// MODAL TRABAJO
+// ============================================================
+function showModalTrabajo(id) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  const estados = ['espera','desm','chapa','prep','cabina','listo'];
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML = `<div class="modal">
+    <div class="modal-title">
+      <span>${t.matricula} — ${t.marca} ${t.modelo}</span>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    ${t.cliente ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${t.cliente}${t.telefono?' · '+t.telefono:''}</div>` : ''}
+    ${t.tipoAveria ? `<div style="font-size:13px;margin-bottom:10px">🔍 <b>Avería:</b> ${t.tipoAveria}</div>` : ''}
+    <div style="margin-bottom:12px">
+      <div class="form-label">Estado</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${estados.map(e => `<button class="est-btn e-${e} ${t.estado===e?'active':''}" onclick="setEstadoModal('${id}','${e}',this)">${estLbl[e]}</button>`).join('')}
+      </div>
+    </div>
+    <div class="form-row3" style="margin-bottom:12px">
+      <div><div class="form-label">Chapa</div><input class="form-input" type="number" step="0.5" value="${t.hChapa}" onchange="updateCampo('${id}','hChapa',parseFloat(this.value)||0)"></div>
+      <div><div class="form-label">Pintura</div><input class="form-input" type="number" step="0.5" value="${t.hPintura}" onchange="updateCampo('${id}','hPintura',parseFloat(this.value)||0)"></div>
+      <div><div class="form-label">Cabina</div><input class="form-input" type="number" step="0.5" value="${t.hCabina}" onchange="updateCampo('${id}','hCabina',parseFloat(this.value)||0)"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px">
+      <div><div class="form-label">H. Presupuestadas</div><input class="form-input" type="number" step="0.5" value="${t.hPresupuestadas||0}" onchange="updateCampo('${id}','hPresupuestadas',parseFloat(this.value)||0)"></div>
+      <div><div class="form-label">Operario</div><input class="form-input" type="text" value="${t.mecanico||''}" onchange="updateCampo('${id}','mecanico',this.value)"></div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Semana asignada</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer" onclick="moverSemanaModal('${id}',-1)">‹</button>
+        <span id="sem-modal-${id}" style="font-size:13px;flex:1;text-align:center">${semanaLabel(t.semana)}</span>
+        <button style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer" onclick="moverSemanaModal('${id}',1)">›</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Tipo avería</div>
+      <input class="form-input" type="text" value="${t.tipoAveria||''}" placeholder="Descripción de la avería…" onchange="updateCampo('${id}','tipoAveria',this.value)">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Grupo reparación</div>
+      <select class="form-input" onchange="updateCampo('${id}','grupoReparacion',this.value)">
+        ${Object.entries(grupoLbl).map(([k,v]) => `<option value="${k}" ${t.grupoReparacion===k?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Nota</div>
+      <input class="form-input" type="text" value="${t.nota||''}" placeholder="Observaciones…" onchange="updateCampo('${id}','nota',this.value)">
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" ${t.recambios?'checked':''} onchange="updateCampo('${id}','recambios',this.checked)" style="width:18px;height:18px;accent-color:#D35400">
+        <span style="font-size:13px;color:#D35400">Pendiente recambios</span>
+      </label>
+    </div>
+    ${t.trelloCardId
+      ? `<div style="font-size:12px;color:var(--green);margin-bottom:8px">✓ Vinculado a Trello</div>`
+      : `<button id="btn-trello-${t.id}" onclick="crearEnTrelloModal('${t.id}',this)" style="width:100%;padding:10px;background:#0052CC;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px">🃏 Crear tarjeta en Trello</button>`}
+    <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
+      <button class="btn-danger-sm" onclick="eliminarTrabajo('${id}')">Eliminar trabajo</button>
+      <a href="https://drive.google.com/drive/search?q=${encodeURIComponent(t.matricula)}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none">📁 Buscar en Drive</a>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov) cerrarModal(); });
+}
+
+function cerrarModal() { document.querySelector('.modal-overlay')?.remove(); }
+
+function setEstadoModal(id, est, btn) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  t.estado = est;
+  sheetsSave(t);
+  btn.closest('.modal').querySelectorAll('.est-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render(); trelloMoverTarjeta(t);
+}
+
+function updateCampo(id, campo, val) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  t[campo] = val;
+  sheetsSave(t);
+  render();
+}
+
+function moverSemanaModal(id, delta) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  t.semana = offsetSemana(t.semana, delta);
+  sheetsSave(t);
+  const el = document.getElementById('sem-modal-' + id);
+  if (el) el.textContent = semanaLabel(t.semana);
+  render();
+}
+
+function eliminarTrabajo(id) {
+  if (!confirm('¿Eliminar este trabajo?')) return;
+  sheetsDelete(id); cerrarModal(); render();
+}
+
+// ============================================================
+// NUEVA CITA
+// ============================================================
+let formMat       = '';
+let formSemanaVal = getSemanaISO(new Date());
+let formMatData   = null;
+
+function renderNueva(el) {
+  el.innerHTML = `
+    <div class="form-section">
+      <div class="form-group">
+        <label class="form-label">Matrícula del vehículo</label>
+        <input class="form-input" id="f-mat" type="text" placeholder="0000XXX" value="${formMat}"
+          oninput="buscarMat(this.value)"
+          style="text-transform:uppercase;font-size:20px;font-weight:700;letter-spacing:2px">
+        <div id="mat-hint" class="form-hint"></div>
+      </div>
+      <div id="veh-section" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Marca</label>
+            <input class="form-input" id="f-marca" type="text" placeholder="SEAT, VW…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modelo</label>
+            <input class="form-input" id="f-modelo" type="text" placeholder="León, Golf…">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Bastidor (VIN)</label>
+            <input class="form-input" id="f-bastidor" type="text" placeholder="VIN…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nº OR</label>
+            <input class="form-input" id="f-or" type="text" placeholder="ej. 770" style="font-weight:600">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cliente</label>
+            <input class="form-input" id="f-clinombre" type="text" placeholder="Nombre completo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-input" id="f-clitel" type="tel" placeholder="6XX XXX XXX">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de avería</label>
+          <input class="form-input" id="f-averia" type="text" placeholder="Ej: Golpe puerta trasera, pintura completa…">
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 14px">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Grupo reparación</label>
+            <select class="form-input" id="f-grupo">
+              <option value="agenda">Agenda</option>
+              <option value="grua">🔴 Grúa / Siniestro</option>
+              <option value="pieza_fuera">Pieza fuera</option>
+              <option value="solo_pintura">Solo pintura</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Operario asignado</label>
+            <input class="form-input" id="f-mecanico" type="text" placeholder="Nombre del operario">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Baremo</label>
+            <select class="form-input" id="f-baremo" onchange="onBaremoChange()">
+              <option value="pro">Presupuesto propio</option>
+              <option value="sol">Solera</option>
+              <option value="gt">GT Estimate</option>
+              <option value="inv">Inventado (aseguradora)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prioridad</label>
+            <select class="form-input" id="f-prio">
+              <option value="media">Normal</option>
+              <option value="alta">Alta (urgente)</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label class="form-label">H. Chapa</label>
+            <input class="form-input" id="f-hc" type="number" min="0" step="0.5" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">H. Pintura</label>
+            <input class="form-input" id="f-hp" type="number" min="0" step="0.5" value="0" oninput="estimarCabina()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">H. Cabina</label>
+            <input class="form-input" id="f-hcab" type="number" min="0" step="0.5" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">H. Presupuestadas (total)</label>
+          <input class="form-input" id="f-hpres" type="number" min="0" step="0.5" value="0">
+        </div>
+        <div class="form-hint" id="cap-hint"></div>
+        <div class="form-group" style="margin-top:4px">
+          <label class="form-label">Semana de entrada</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer" onclick="formSemanaNav(-1)">‹</button>
+            <span id="form-sem-lbl" style="font-size:13px;flex:1;text-align:center"></span>
+            <button style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer" onclick="formSemanaNav(1)">›</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0">
+            <input type="checkbox" id="f-rec" style="width:18px;height:18px;accent-color:#D35400">
+            <span style="font-size:14px;color:#D35400">Pendiente recambios</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota (opcional)</label>
+          <input class="form-input" id="f-nota" type="text" placeholder="Observaciones…">
+        </div>
+        <div id="baremo-warn" class="alert alert-warn" style="display:none;margin:0 0 12px">Baremo inventado — recuerda negociarlo al cierre</div>
+        <button class="btn-primary" onclick="confirmarCita()">Confirmar entrada</button>
+        <div style="height:16px"></div>
+      </div>
+    </div>
+  `;
+  formSemanaVal = semanaActual;
+  document.getElementById('form-sem-lbl').textContent = semanaLabel(formSemanaVal);
+  if (formMat) setTimeout(() => buscarMat(formMat), 50);
+}
+
+function buscarMat(val) {
+  formMat = val.toUpperCase();
+  const hint = document.getElementById('mat-hint');
+  const sec  = document.getElementById('veh-section');
+  if (formMat.length < 3) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  formMatData = getCitaByMat(formMat);
+  if (formMatData) {
+    hint.textContent = `✓ Vehículo encontrado — última cita ${formMatData.semana}`;
+    hint.style.color = 'var(--green)';
+    setVal('f-marca',    formMatData.marca);
+    setVal('f-modelo',   formMatData.modelo);
+    setVal('f-bastidor', formMatData.bastidor);
+    setVal('f-clinombre',formMatData.cliente);
+    setVal('f-clitel',   formMatData.telefono);
+    ['f-marca','f-modelo','f-bastidor','f-clinombre','f-clitel'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp) { inp.readOnly = true; inp.style.background = '#f0fff4'; }
+    });
+  } else {
+    hint.textContent = 'Vehículo nuevo — completa los datos';
+    hint.style.color = 'var(--orange)';
+    formMatData = null;
+    ['f-marca','f-modelo','f-bastidor','f-clinombre','f-clitel'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp) { inp.readOnly = false; inp.style.background = ''; }
+    });
+  }
+}
+
+function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function onBaremoChange() {
+  const bar = getVal('f-baremo');
+  document.getElementById('baremo-warn').style.display = bar === 'inv' ? 'block' : 'none';
+}
+
+function estimarCabina() {
+  const hp = parseFloat(document.getElementById('f-hp').value) || 0;
+  document.getElementById('f-hcab').value = Math.round(hp * RATIO_CAB * 2) / 2;
+  actualizarCapHint();
+}
+
+function actualizarCapHint() {
+  const hc   = parseFloat(getVal('f-hc'))   || 0;
+  const hp   = parseFloat(getVal('f-hp'))   || 0;
+  const hcab = parseFloat(getVal('f-hcab')) || 0;
+  const cap  = calcCapacidad(formSemanaVal);
+  const msgs = [];
+  if (pct(cap.hChapa+hc, CAP.chapa) > 100)    msgs.push(`Chapa al ${pct(cap.hChapa+hc,CAP.chapa)}%`);
+  if (pct(cap.hCabina+hcab, CAP.cabina) > 100) msgs.push('Cabina saturada — considera otra semana');
+  const hint = document.getElementById('cap-hint');
+  if (hint) { hint.textContent = msgs.join(' · '); hint.style.color = msgs.length ? 'var(--red)' : ''; }
+}
+
+function formSemanaNav(d) {
+  formSemanaVal = offsetSemana(formSemanaVal, d);
+  document.getElementById('form-sem-lbl').textContent = semanaLabel(formSemanaVal);
+  actualizarCapHint();
+}
+
+async function confirmarCita() {
+  const mat = formMat;
+  if (!mat || mat.length < 3) { alert('Introduce la matrícula'); return; }
+  const marca  = getVal('f-marca');
+  const modelo = getVal('f-modelo');
+  if (!marca || !modelo) { alert('Completa marca y modelo'); return; }
+
+  const grupo  = getVal('f-grupo') || 'agenda';
+  const baremo = getVal('f-baremo');
+  const nota   = getVal('f-nota') || (baremo === 'inv' ? 'Baremo revisable — negociar al cierre' : '');
+  const hc     = parseFloat(getVal('f-hc'))    || 0;
+  const hp     = parseFloat(getVal('f-hp'))    || 0;
+  const hcab   = parseFloat(getVal('f-hcab'))  || 0;
+  const hpres  = parseFloat(getVal('f-hpres')) || 0;
+
+  if (hc > 0 || hp > 0 || hcab > 0) {
+    const cap = calcCapacidad(formSemanaVal);
+    const noQueda = (cap.hChapa+hc) > CAP.chapa || (cap.hPintura+hp) > CAP.pintura || (cap.hCabina+hcab) > CAP.cabina;
+    if (noQueda) {
+      const semLibre = buscarSemanaLibre(hc, hp, hcab, formSemanaVal);
+      let msg = `Sin hueco en ${semanaLabel(formSemanaVal)}.\n\n1 — Meter igualmente\n`;
+      if (semLibre) msg += `2 — Mover a ${semanaLabel(semLibre)}\n`;
+      msg += '3 — Cancelar';
+      const resp = prompt(msg, semLibre ? '2' : '1');
+      if (!resp || resp === '3') return;
+      if (resp === '2' && semLibre) formSemanaVal = semLibre;
+    }
+  }
+
+  const cita = {
+    id:               uid(),
+    matricula:        mat,
+    marca,
+    modelo,
+    bastidor:         getVal('f-bastidor'),
+    or:               getVal('f-or') || null,
+    cliente:          getVal('f-clinombre'),
+    telefono:         getVal('f-clitel'),
+    estado:           'desm',
+    semana:           formSemanaVal,
+    tipoAveria:       getVal('f-averia'),
+    grupoReparacion:  grupo,
+    mecanico:         getVal('f-mecanico'),
+    hChapa:           hc,
+    hPintura:         hp,
+    hCabina:          hcab,
+    hPresupuestadas:  hpres,
+    baremo,
+    prio:             getVal('f-prio'),
+    recambios:        document.getElementById('f-rec')?.checked || false,
+    valorHora:        0,
+    nota,
+    trelloCardId:     null,
+    fechaCreacion:    new Date().toISOString(),
+    fechaModificacion: new Date().toISOString(),
+  };
+
+  await sheetsSave(cita);
+  trelloCrearTarjeta(cita);
+
+  formMat = ''; formMatData = null;
+  alert('✓ Trabajo registrado');
+  showView('trabajos');
+}
+
+// ============================================================
+// VEHÍCULOS
+// ============================================================
+function renderVehiculos(el) {
+  const matrMap = {};
+  citas.forEach(c => {
+    if (!matrMap[c.matricula]) matrMap[c.matricula] = { ...c, count: 0 };
+    matrMap[c.matricula].count++;
+  });
+  const vehs = Object.values(matrMap).sort((a,b) => a.matricula.localeCompare(b.matricula));
+
+  el.innerHTML = `
+    <div class="sec-title">Vehículos registrados — ${vehs.length}</div>
+    <div class="card">
+      ${vehs.length === 0 ? '<div class="empty"><p>Sin vehículos aún</p></div>' :
+        vehs.map(v => `
+          <div class="client-row">
+            <div class="client-avatar">${v.matricula.slice(0,2)}</div>
+            <div style="flex:1">
+              <div class="client-name">${v.matricula}</div>
+              <div class="client-tel">${v.marca} ${v.modelo}${v.bastidor ? ' · ' + v.bastidor : ''}</div>
+              <div class="client-mat">${v.cliente||'—'}${v.telefono ? ' · ' + v.telefono : ''}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${v.count} OR(s) · última semana ${v.semana}</div>
+            </div>
+            <a href="https://drive.google.com/drive/search?q=${encodeURIComponent(v.matricula)}" target="_blank" style="font-size:18px;text-decoration:none">📁</a>
+          </div>`).join('')}
+    </div>
+    <div style="height:10px"></div>
+  `;
+}
+
+// ============================================================
+// TRELLO
+// ============================================================
+const TRELLO_NAME_TO_ESTADO = {
+  'vehiculos en el taller': 'espera',
+  'coches en el taller con golpe - pendiente de compañia': 'espera',
+  'coches pendiente cita': 'espera',
+  'pendiente de desmontar': 'desm',
+  'reparando chapa': 'chapa', 'varillero': 'chapa', 'listo de chapa': 'chapa',
+  'aparejado': 'prep', 'preparación pintura': 'prep', 'preparacion pintura': 'prep',
+  'pintados': 'cabina',
+  'montaje': 'listo', 'limpieza': 'listo', 'control de calidad': 'listo',
+  'coche listo': 'listo', 'cliente avisado': 'listo', 'entregado cliente': 'listo',
+};
+
+async function trelloAPI(path, method = 'GET', body = null) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `https://api.trello.com/1${path}${sep}key=${TRELLO_KEY}&token=${TRELLO_TOKEN}`;
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (!res.ok) { const txt = await res.text().catch(()=>''); throw new Error(`Trello ${res.status}: ${txt}`); }
+  return res.json();
+}
+
+async function trelloEnsureLists() {
+  if (Object.keys(_trelloListMap).length > 0) return { map: _trelloListMap, rev: _trelloRevMap };
+  const lists = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/lists?fields=name,id`);
+  const rev = {};
+  lists.forEach(l => {
+    const key = l.name.toLowerCase().trim();
+    const estado = TRELLO_NAME_TO_ESTADO[key];
+    if (estado && !rev[l.id]) rev[l.id] = estado;
+  });
+  _trelloListMap = TRELLO_LIST_IDS;
+  _trelloRevMap  = rev;
+  return { map: TRELLO_LIST_IDS, rev };
+}
+
+function updateSyncStatus() {
+  const el = document.getElementById('trello-status');
+  if (el) el.textContent = trelloStatus || '';
+}
+
+async function trelloSync() {
+  if (trelloSyncing) return;
+  trelloSyncing = true;
+  trelloStatus = '⏳ Sincronizando Trello…';
+  _trelloListMap = {}; _trelloRevMap = {};
+  updateSyncStatus();
+  try {
+    const { rev } = await trelloEnsureLists();
+    const cards = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/cards?fields=name,idList,id`);
+    let cambios = 0;
+    cards.forEach(card => {
+      const estado = rev[card.idList];
+      if (!estado) return;
+      let t = citas.find(x => x.trelloCardId === card.id);
+      if (!t) {
+        const m = card.name.match(/^([A-Z0-9]{4,10})/i);
+        if (m) {
+          const mat = m[1].toUpperCase();
+          t = citas.find(x => x.matricula === mat && !x.trelloCardId);
+          if (t) t.trelloCardId = card.id;
+        }
+      }
+      if (t && t.estado !== estado) { t.estado = estado; cambios++; }
+    });
+    if (cambios > 0) citas.filter(x => x.trelloCardId).forEach(x => sheetsSave(x));
+    const hora = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+    trelloStatus = `✓ Trello · ${hora}${cambios ? ' ('+cambios+' cambios)' : ''}`;
+  } catch(e) {
+    trelloStatus = `⚠ Trello: ${e.message}`;
+    console.error(e);
+  }
+  trelloSyncing = false;
+  updateSyncStatus();
+  render();
+}
+
+async function trelloCrearTarjeta(t) {
+  try {
+    const { map } = await trelloEnsureLists();
+    const listId = map[t.estado] || map['espera'];
+    if (!listId) return;
+    const mat = t.matricula.toUpperCase();
+    const allCards = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/cards?fields=name,id,idList`);
+    const orNum = t.or ? t.or.toString().replace(/^OR/i,'') : null;
+    const byMat = allCards.filter(c => c.name.toUpperCase().includes(mat));
+    if (byMat.length > 0) {
+      let exactMatch = null;
+      if (orNum) exactMatch = byMat.find(c => { const m = c.name.match(/OR(\d+)/i); return m && m[1] === orNum; });
+      if (exactMatch) {
+        t.trelloCardId = exactMatch.id;
+        sheetsSave(t);
+        if (exactMatch.idList !== listId) await trelloAPI(`/cards/${exactMatch.id}`, 'PUT', { idList: listId });
+        trelloStatus = `✓ Tarjeta existente vinculada (${mat} OR${orNum})`;
+        updateSyncStatus(); return;
+      }
+    }
+    const bastidor = t.bastidor || 'VIN';
+    const orSuffix = t.or ? ` - OR${t.or}` : '';
+    const name = `${mat} - ${t.marca} ${t.modelo} - ${bastidor}${orSuffix}`;
+    const driveSearch = `https://drive.google.com/drive/search?q=${encodeURIComponent(mat)}`;
+    const desc = [
+      t.cliente ? `Cliente: ${t.cliente}${t.telefono ? ' · '+t.telefono : ''}` : '',
+      t.tipoAveria   ? `Avería: ${t.tipoAveria}` : '',
+      t.grupoReparacion ? `Grupo: ${grupoLbl[t.grupoReparacion]||t.grupoReparacion}` : '',
+      t.mecanico     ? `Operario: ${t.mecanico}` : '',
+      `Chapa: ${t.hChapa}h | Pintura: ${t.hPintura}h | Cabina: ${t.hCabina}h`,
+      t.hPresupuestadas ? `H. Presup.: ${t.hPresupuestadas}h` : '',
+      `Baremo: ${barLbl[t.baremo]||t.baremo} | Prioridad: ${t.prio}`,
+      t.nota ? `Nota: ${t.nota}` : '',
+      `Semana: ${t.semana}`,
+      `📁 Drive: ${driveSearch}`,
+    ].filter(Boolean).join('\n');
+    const card = await trelloAPI('/cards', 'POST', { name, desc, idList: listId });
+    t.trelloCardId = card.id;
+    sheetsSave(t);
+    const hora = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+    trelloStatus = `✓ Tarjeta creada en Trello · ${hora}`;
+    updateSyncStatus();
+  } catch(e) {
+    console.error('Trello crear tarjeta:', e);
+    trelloStatus = `⚠ Trello: ${e.message}`;
+    updateSyncStatus();
+  }
+}
+
+async function trelloMoverTarjeta(t) {
+  if (!t.trelloCardId) { trelloCrearTarjeta(t); return; }
+  try {
+    const { map } = await trelloEnsureLists();
+    const listId = map[t.estado];
+    if (!listId) return;
+    await trelloAPI(`/cards/${t.trelloCardId}`, 'PUT', { idList: listId });
+    const hora = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+    trelloStatus = `✓ Trello actualizado · ${hora}`;
+    updateSyncStatus();
+  } catch(e) { console.error('Trello mover tarjeta:', e); }
+}
+
+async function crearEnTrelloCard(id) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  await trelloCrearTarjeta(t);
+  render();
+}
+
+async function crearEnTrelloModal(id, btn) {
+  const t = citas.find(x => x.id === id);
+  if (!t) return;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando…'; }
+  await trelloCrearTarjeta(t);
+  cerrarModal();
+  showModalTrabajo(id);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  isLoading = true; render();
+  await sheetsLoad();
+  isLoading = false; render();
+}
+
+init();
+</script>
+</body>
+</html>
