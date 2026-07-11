@@ -191,6 +191,108 @@ html, body { height: 100%; background: var(--gray-light); font-family: -apple-sy
 .movilidad-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #EBF5FB; border: 1px solid #AED6F1; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 13px; color: #1A5276; text-decoration: none; }
 
 @media (min-width: 520px) { .form-row3 { grid-template-columns: repeat(3,1fr); } }
+
+/* ============================================================
+   DESKTOP LAYOUT (≥ 900px)
+   ============================================================ */
+@media (min-width: 900px) {
+  /* Grid: sidebar | (header + main) */
+  #app {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "nav header" "nav main";
+    max-width: 100%;
+    height: 100vh;
+  }
+
+  /* Sidebar nav */
+  #nav {
+    grid-area: nav;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    padding: 24px 10px 16px;
+    gap: 2px;
+    transform: none !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: 220px !important;
+    max-width: 220px !important;
+    background: white;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+    overflow-y: auto;
+  }
+  #nav::before {
+    content: 'CITAS JM';
+    display: block;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--blue);
+    padding: 0 14px 20px;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .nav-btn {
+    flex-direction: row !important;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn svg { width: 20px; height: 20px; }
+  .nav-btn:hover { background: var(--gray-light); }
+  .nav-btn.active { background: var(--blue-pale); color: var(--blue); font-weight: 600; }
+  .nav-btn.active svg { stroke: var(--blue); }
+
+  /* Header */
+  #header { grid-area: header; }
+
+  /* Main content */
+  #main {
+    grid-area: main;
+    overflow-y: auto;
+    padding-bottom: 24px;
+  }
+
+  /* 2-column job cards grid */
+  .jobs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Calendar wider */
+  .cal-grid { gap: 5px; }
+  .cal-cell { min-height: 72px; }
+
+  /* Modal: centered, not bottom sheet */
+  .modal-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+  .modal {
+    border-radius: var(--radius);
+    max-width: 640px;
+    padding-bottom: 24px;
+    max-height: 88vh;
+  }
+
+  /* Dashboard: more room */
+  .stats-row { grid-template-columns: repeat(4, 1fr); }
+  .cap-grid   { grid-template-columns: repeat(3, 1fr); }
+
+  /* Form: 2 columns on desktop */
+  .form-section { max-width: 720px; margin: 0 auto; }
+}
 </style>
 </head>
 <body>
@@ -380,6 +482,9 @@ function parseRow(row) {
     fechaMovInicio:    String(row['Fecha Mov Inicio'] || ''),
     fechaMovFin:       String(row['Fecha Mov Fin'] || ''),
     aseguradora:       String(row['Aseguradora'] || ''),
+    peritoNombre:      String(row['Perito'] || ''),
+    peritoTel:         String(row['Perito Tel'] || ''),
+    peritoEmail:       String(row['Perito Email'] || ''),
     valorHora:         parseFloat(row['Valor Hora']) || 0,
     nota:              String(row['Nota'] || ''),
     trelloCardId:      row['Trello Card ID'] ? String(row['Trello Card ID']) : null,
@@ -403,6 +508,9 @@ function toRow(c) {
     'Fecha Mov Inicio': c.fechaMovInicio || '',
     'Fecha Mov Fin': c.fechaMovFin || '',
     'Aseguradora': c.aseguradora || '',
+    'Perito': c.peritoNombre || '',
+    'Perito Tel': c.peritoTel || '',
+    'Perito Email': c.peritoEmail || '',
     'Valor Hora': c.valorHora || 0, 'Nota': c.nota || '',
     'Trello Card ID': c.trelloCardId || '',
     'Fecha Creación': c.fechaCreacion || new Date().toISOString(),
@@ -596,6 +704,51 @@ async function recargarSheets() {
 }
 
 // ============================================================
+// PERITO DIRECTORIO
+// ============================================================
+const PERITO_DIR_KEY = 'citas_jm_peritos';
+
+function getPeritosDir() {
+  try { return JSON.parse(localStorage.getItem(PERITO_DIR_KEY) || '[]'); } catch(e) { return []; }
+}
+function savePerito(nombre, tel, email) {
+  if (!nombre.trim()) return;
+  const dir = getPeritosDir();
+  const idx = dir.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  const entry = { nombre: nombre.trim(), tel: (tel||'').trim(), email: (email||'').trim() };
+  if (idx >= 0) dir[idx] = entry; else dir.push(entry);
+  localStorage.setItem(PERITO_DIR_KEY, JSON.stringify(dir));
+}
+function peritoAutocomplete(val) {
+  const sug = document.getElementById('perito-sug');
+  if (!sug) return;
+  if (!val.trim()) { sug.style.display = 'none'; return; }
+  const matches = getPeritosDir().filter(p => p.nombre.toLowerCase().includes(val.toLowerCase()));
+  if (!matches.length) { sug.style.display = 'none'; return; }
+  sug.style.display = 'block';
+  sug.innerHTML = matches.map(p => `
+    <div onclick="peritoSelect('${p.nombre.replace(/'/g,"\\'")}','${(p.tel||'').replace(/'/g,"\\'")}','${(p.email||'').replace(/'/g,"\\'")}')"
+      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px"
+      onmouseover="this.style.background='var(--gray-light)'" onmouseout="this.style.background=''">
+      <div style="font-weight:500">${p.nombre}</div>
+      ${p.tel||p.email ? `<div style="font-size:12px;color:var(--text-muted)">${[p.tel,p.email].filter(Boolean).join(' · ')}</div>` : ''}
+    </div>`).join('');
+}
+function peritoSelect(nombre, tel, email) {
+  const n = document.getElementById('f-perito');
+  const t = document.getElementById('f-perito-tel');
+  const e = document.getElementById('f-perito-email');
+  if (n) n.value = nombre;
+  if (t) t.value = tel;
+  if (e) e.value = email;
+  const sug = document.getElementById('perito-sug');
+  if (sug) sug.style.display = 'none';
+}
+function peritoBlur() {
+  setTimeout(() => { const sug = document.getElementById('perito-sug'); if (sug) sug.style.display='none'; }, 200);
+}
+
+// ============================================================
 // TRABAJOS
 // ============================================================
 let busquedaTexto = '';
@@ -639,7 +792,9 @@ function renderTrabajos(el) {
       </div>
     </div>
     <div class="tabs">${tabs.map(t => `<button class="tab ${filtroTab===t.id?'active':''}" onclick="setFiltro('${t.id}')">${t.lbl}</button>`).join('')}</div>
-    ${filtered.length === 0 ? `<div class="empty"><p>${busquedaTexto ? 'Sin resultados para "'+busquedaTexto+'"' : 'Sin trabajos en esta categoría'}</p></div>` : filtered.map(t => renderJobCard(t, false)).join('')}
+    ${filtered.length === 0
+      ? `<div class="empty"><p>${busquedaTexto ? 'Sin resultados para "'+busquedaTexto+'"' : 'Sin trabajos en esta categoría'}</p></div>`
+      : `<div class="jobs-grid">${filtered.map(t => renderJobCard(t, false)).join('')}</div>`}
     <div style="height:10px"></div>
   `;
   // Mantener foco en el buscador si estaba activo
@@ -659,8 +814,9 @@ function renderJobCard(t, mini) {
     `<button class="est-btn e-${e} ${t.estado===e?'active':''}" onclick="cambiarEstado('${t.id}','${e}',event)">${estLbl[e]}</button>`
   ).join('')}</div>`;
 
-  const movBadge = t.movilidad ? `<span class="badge" style="background:#EBF5FB;color:#2E86C1">🚗 Movilidad</span>` : '';
-  const asegBadge = t.aseguradora ? `<span class="badge" style="background:#F4ECF7;color:#6C3483">🏢 ${t.aseguradora}</span>` : '';
+  const movBadge   = t.movilidad    ? `<span class="badge" style="background:#1A5276;color:white;cursor:pointer" onclick="event.stopPropagation();window.open(buildMovilidadURL('${t.matricula}','${t.fechaMovInicio||''}','${t.fechaMovFin||''}','${(t.cliente||'').replace(/'/g,"\\'")}'),'_blank')">🚗 Movilidad ↗</span>` : '';
+  const asegBadge  = t.aseguradora  ? `<span class="badge" style="background:#F4ECF7;color:#6C3483">🏢 ${t.aseguradora}</span>` : '';
+  const peritoBadge = t.peritoNombre ? `<span class="badge" style="background:#FEF9E7;color:#7D6608">🕵️ ${t.peritoNombre}</span>` : '';
 
   return `<div class="job-card prio-${t.prio}" onclick="abrirTrabajo('${t.id}')">
     <div class="job-top">
@@ -675,6 +831,7 @@ function renderJobCard(t, mini) {
       ${t.mecanico ? `<span class="badge" style="background:#EBF5FB;color:#1A5276">🔧 ${t.mecanico}</span>` : ''}
       ${movBadge}
       ${asegBadge}
+      ${peritoBadge}
     </div>
     ${(t.hChapa||t.hPintura) ? `<div class="job-hours"><span>Chapa <b>${t.hChapa}h</b></span><span>Pintura <b>${t.hPintura}h</b></span><span>Cabina <b>${t.hCabina}h</b></span>${t.hPresupuestadas ? `<span>Presup. <b>${t.hPresupuestadas}h</b></span>` : ''}</div>` : ''}
     ${t.tipoAveria ? `<div class="job-averia">🔍 ${t.tipoAveria}</div>` : ''}
@@ -715,7 +872,16 @@ function showModalTrabajo(id) {
     ${t.cliente ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${t.cliente}${t.telefono?' · '+t.telefono:''}</div>` : ''}
     ${t.tipoAveria ? `<div style="font-size:13px;margin-bottom:10px">🔍 <b>Avería:</b> ${t.tipoAveria}</div>` : ''}
     ${t.fechaEntrada ? `<div style="font-size:13px;margin-bottom:10px">📅 <b>Entrada:</b> ${new Date(t.fechaEntrada+'T00:00:00').toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'})}</div>` : ''}
-    ${t.movilidad ? `<div style="font-size:13px;margin-bottom:10px;color:#2E86C1">🚗 Coche sustitución${t.fechaMovInicio?' · '+t.fechaMovInicio:''}${t.fechaMovFin?' → '+t.fechaMovFin:''}</div>` : ''}
+    ${t.movilidad ? `
+      <button onclick="window.open(buildMovilidadURL('${t.matricula}','${t.fechaMovInicio||''}','${t.fechaMovFin||''}','${(t.cliente||'').replace(/'/g,"\\'")}'),'_blank')"
+        style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1A5276;color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;text-align:left;margin-bottom:12px">
+        <span style="font-size:20px">🚗</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">Módulo Movilidad</div>
+          <div style="font-size:11px;opacity:0.85">${t.fechaMovInicio||''}${t.fechaMovFin?' → '+t.fechaMovFin:''} · ${t.matricula}</div>
+        </div>
+        <span style="font-size:18px">↗</span>
+      </button>` : ''}
     <div style="margin-bottom:12px">
       <div class="form-label">Estado</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -748,6 +914,20 @@ function showModalTrabajo(id) {
       <input class="form-input" type="text" value="${t.aseguradora||''}" placeholder="Mapfre, AXA, Allianz…" onchange="updateCampo('${id}','aseguradora',this.value)">
     </div>
     <div class="form-group">
+      <div class="form-label">🕵️ Perito</div>
+      <input class="form-input" type="text" value="${t.peritoNombre||''}" placeholder="Nombre del perito" onchange="updateCampo('${id}','peritoNombre',this.value);if(this.value)savePerito(this.value,document.getElementById('m-perito-tel-${id}')?.value||'',document.getElementById('m-perito-email-${id}')?.value||'')">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">📞 Tel. Perito</div>
+        <input id="m-perito-tel-${id}" class="form-input" type="tel" value="${t.peritoTel||''}" placeholder="Teléfono" onchange="updateCampo('${id}','peritoTel',this.value)">
+      </div>
+      <div class="form-group">
+        <div class="form-label">✉️ Email Perito</div>
+        <input id="m-perito-email-${id}" class="form-input" type="email" value="${t.peritoEmail||''}" placeholder="perito@compañia.com" onchange="updateCampo('${id}','peritoEmail',this.value)">
+      </div>
+    </div>
+    <div class="form-group">
       <div class="form-label">Grupo reparación</div>
       <select class="form-input" onchange="updateCampo('${id}','grupoReparacion',this.value)">
         ${Object.entries(grupoLbl).map(([k,v]) => `<option value="${k}" ${t.grupoReparacion===k?'selected':''}>${v}</option>`).join('')}
@@ -769,7 +949,7 @@ function showModalTrabajo(id) {
     <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
       <button class="btn-danger-sm" onclick="eliminarTrabajo('${id}')">Eliminar trabajo</button>
       <a href="https://drive.google.com/drive/search?q=${encodeURIComponent(t.matricula)}" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none">📁 Drive</a>
-      ${t.movilidad ? `<a href="${MOVILIDAD_URL}" target="_blank" style="font-size:12px;color:#2E86C1;text-decoration:none">🚗 Movilidad</a>` : ''}
+      ${t.movilidad ? `<button onclick="window.open(buildMovilidadURL('${t.matricula}','${t.fechaMovInicio||''}','${t.fechaMovFin||''}','${(t.cliente||'').replace(/'/g,"\\'")}'),'_blank')" style="font-size:12px;color:#2E86C1;background:none;border:none;cursor:pointer;padding:4px 0">🚗 Movilidad ↗</button>` : ''}
     </div>
   </div>`;
   document.body.appendChild(ov);
@@ -823,10 +1003,19 @@ function renderNueva(el) {
     <div class="form-section">
       <div class="form-group">
         <label class="form-label">Matrícula del vehículo</label>
-        <input class="form-input" id="f-mat" type="text" placeholder="0000XXX" value="${formMat}"
-          oninput="buscarMat(this.value)"
-          style="text-transform:uppercase;font-size:20px;font-weight:700;letter-spacing:2px">
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input class="form-input" id="f-mat" type="text" placeholder="0000XXX" value="${formMat}"
+            oninput="buscarMat(this.value)"
+            style="text-transform:uppercase;font-size:20px;font-weight:700;letter-spacing:2px;flex:1"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();buscarMatCompleto();}">
+          <button id="btn-buscar-mat" onclick="buscarMatCompleto()" type="button"
+            title="Buscar en Sheets y Trello"
+            style="padding:0 16px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:20px;cursor:pointer;flex-shrink:0">
+            🔍
+          </button>
+        </div>
         <div id="mat-hint" class="form-hint"></div>
+        <div id="mat-search-results"></div>
       </div>
       <div id="veh-section" style="display:none">
         <div class="form-row">
@@ -848,6 +1037,24 @@ function renderNueva(el) {
         <div class="form-group">
           <label class="form-label">🏢 Compañía aseguradora</label>
           <input class="form-input" id="f-aseguradora" type="text" placeholder="Mapfre, AXA, Allianz…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">🕵️ Perito</label>
+          <div style="position:relative">
+            <input class="form-input" id="f-perito" type="text" placeholder="Nombre del perito" autocomplete="off"
+              oninput="peritoAutocomplete(this.value)" onblur="peritoBlur()">
+            <div id="perito-sug" style="position:absolute;z-index:50;width:100%;background:white;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);display:none;max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">📞 Tel. Perito</label>
+            <input class="form-input" id="f-perito-tel" type="tel" placeholder="Teléfono">
+          </div>
+          <div class="form-group">
+            <label class="form-label">✉️ Email Perito</label>
+            <input class="form-input" id="f-perito-email" type="email" placeholder="perito@compañia.com">
+          </div>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 14px">
         <div class="form-group">
@@ -925,14 +1132,15 @@ function renderNueva(el) {
               <input class="form-input" id="f-mov-fin" type="date">
             </div>
           </div>
-          <a href="${MOVILIDAD_URL}" target="_blank" class="movilidad-banner">
-            <span style="font-size:20px">🚗</span>
-            <div>
-              <div style="font-weight:600">Módulo Movilidad Motorcar</div>
-              <div style="font-size:11px;opacity:0.8">Gestión de coches de sustitución</div>
+          <button onclick="abrirMovilidadForm()" type="button"
+            style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 16px;background:#1A5276;color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;text-align:left;margin-bottom:4px">
+            <span style="font-size:22px">🚗</span>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px">Abrir Módulo Movilidad</div>
+              <div style="font-size:11px;opacity:0.85">Abre con matrícula y fechas ya cargadas</div>
             </div>
-            <span style="margin-left:auto;font-size:16px">›</span>
-          </a>
+            <span style="font-size:20px">↗</span>
+          </button>
         </div>
         <div class="form-group">
           <label class="form-label">Nota (opcional)</label>
@@ -962,6 +1170,210 @@ function toggleMovilidad() {
   const checked = document.getElementById('f-movilidad')?.checked;
   const sec = document.getElementById('movilidad-section');
   if (sec) sec.style.display = checked ? 'block' : 'none';
+}
+
+function buildMovilidadURL(mat, inicio, fin, cliente) {
+  const params = new URLSearchParams();
+  if (mat)     params.set('matricula', mat);
+  if (inicio)  params.set('inicio', inicio);
+  if (fin)     params.set('fin', fin);
+  if (cliente) params.set('cliente', cliente);
+  const q = params.toString();
+  return MOVILIDAD_URL + (q ? '?' + q : '');
+}
+
+function abrirMovilidadForm() {
+  const mat    = document.getElementById('f-mat')?.value?.trim() || '';
+  const inicio = document.getElementById('f-mov-inicio')?.value || '';
+  const fin    = document.getElementById('f-mov-fin')?.value || '';
+  window.open(buildMovilidadURL(mat, inicio, fin, ''), '_blank');
+}
+
+async function buscarMatCompleto() {
+  const mat = (document.getElementById('f-mat')?.value || '').toUpperCase().trim();
+  if (mat.length < 3) { alert('Introduce al menos 3 caracteres de la matrícula'); return; }
+  formMat = mat;
+
+  const btn = document.getElementById('btn-buscar-mat');
+  const res = document.getElementById('mat-search-results');
+  const hint = document.getElementById('mat-hint');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  if (res) res.innerHTML = `<div style="padding:10px 0;font-size:13px;color:var(--text-muted)">⏳ Buscando en Sheets, Expedientes y Trello…</div>`;
+
+  const expTaller = SHEET_TAB === 'CITAS_JM' ? 'JM' : 'RM';
+
+  // Fuentes en paralelo
+  const [sheetsResult, trelloCards, expedientesResult] = await Promise.all([
+    // 1. Sheets: buscar en citas locales (ya cargadas) + intentar reload fresco
+    (async () => {
+      // Buscar en citas ya cargadas
+      const local = citas.filter(c => c.matricula === mat)
+        .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
+      if (local.length > 0) return { source: 'Sheets (local)', data: local[0], all: local };
+      // Si no hay local, intentar consulta fresca a Sheets
+      try {
+        const url = SCRIPT_URL + '?action=load&sheet=' + encodeURIComponent(SHEET_TAB);
+        const r = await fetch(url); const json = await r.json();
+        const rows = (json.data || []).map(parseRow).filter(c => c.matricula === mat)
+          .sort((a,b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
+        if (rows.length > 0) return { source: 'Sheets', data: rows[0], all: rows };
+      } catch(e) {}
+      return null;
+    })(),
+    // 2. Trello: buscar tarjetas con la matrícula
+    (async () => {
+      try {
+        const cards = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/cards?fields=name,desc,id,idList`);
+        return cards.filter(c => c.name.toUpperCase().includes(mat));
+      } catch(e) { return []; }
+    })(),
+    // 3. Expedientes: buscar en EXPEDIENTES MOTORCAR v2
+    (async () => {
+      try {
+        const url = SCRIPT_URL + '?action=loadExpedientes&taller=' + expTaller + '&mat=' + encodeURIComponent(mat);
+        const r = await fetch(url); const json = await r.json();
+        if (!json.ok || !json.data) return null;
+        const rows = json.data.filter(row => {
+          const m = String(row['MATRICULA'] || '').toUpperCase().replace(/\s/g,'');
+          return m === mat || m.includes(mat);
+        });
+        return rows.length > 0 ? rows[0] : null;
+      } catch(e) { return null; }
+    })()
+  ]);
+
+  if (btn) { btn.textContent = '🔍'; btn.disabled = false; }
+
+  // Parsear tarjeta Trello: "1234ABC - SEAT IBIZA - VIN123 - OR0427"
+  function parseTrelloName(name) {
+    const parts = name.split(' - ');
+    return {
+      marcaModelo: parts[1]?.trim() || '',
+      bastidor:    parts[2]?.trim() || '',
+      or:          parts[3]?.replace(/^OR/i,'').trim() || ''
+    };
+  }
+
+  // Construir panel de resultados
+  let html = '';
+  let autoFillData = null;
+
+  if (!sheetsResult && trelloCards.length === 0 && !expedientesResult) {
+    html = `<div style="padding:8px 0;font-size:13px;color:var(--orange)">⚠ No se encontró <b>${mat}</b> en Sheets, Expedientes ni Trello — vehículo nuevo</div>`;
+    if (hint) { hint.textContent = 'Vehículo nuevo — completa los datos'; hint.style.color = 'var(--orange)'; }
+  } else {
+    html = `<div style="margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">`;
+
+    // Resultado Sheets
+    if (sheetsResult) {
+      const d = sheetsResult.data;
+      const prev = sheetsResult.all.length > 1 ? ` · ${sheetsResult.all.length} citas previas` : '';
+      autoFillData = d;
+      html += `
+        <div style="padding:10px 14px;background:#E8F8F5;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:#1E8449;margin-bottom:4px">🗂 SHEETS${prev}</div>
+          <div style="font-size:14px;font-weight:600">${d.marca} ${d.modelo}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${d.cliente||''}${d.telefono?' · '+d.telefono:''}${d.bastidor?' · '+d.bastidor:''}</div>
+          ${d.aseguradora||d.peritoNombre ? `<div style="font-size:12px;color:var(--text-muted)">${[d.aseguradora,d.peritoNombre].filter(Boolean).join(' · ')}</div>` : ''}
+        </div>`;
+    }
+
+    // Resultado Expedientes
+    if (expedientesResult) {
+      const exp = expedientesResult;
+      const marcaMod = exp['MARCA_MODELO'] || '';
+      const propietario = exp['PROPIETARIO'] || '';
+      const tel = exp['TELEFONO'] || '';
+      const aseg = exp['ASEGURADORA'] || '';
+      const perito = exp['PERITO'] || '';
+      const siniestro = exp['Nº_SINIESTRO'] || '';
+      const estado = exp['ESTADO'] || '';
+      const or = exp['OR'] || '';
+      // Construir autoFillData desde expedientes si no hay dato de Sheets
+      if (!autoFillData) {
+        const mm = marcaMod.split(' ');
+        autoFillData = {
+          _source: 'Expedientes',
+          marca: mm[0]||'', modelo: mm.slice(1).join(' ')||'',
+          bastidor: exp['BASTIDOR']||'',
+          cliente: propietario, telefono: tel,
+          or: or, aseguradora: aseg,
+          peritoNombre: perito, peritoTel:'', peritoEmail: exp['EMAIL']||''
+        };
+      } else {
+        // Fusionar: completar campos vacíos con datos de Expedientes
+        if (!autoFillData.aseguradora && aseg) autoFillData.aseguradora = aseg;
+        if (!autoFillData.peritoNombre && perito) autoFillData.peritoNombre = perito;
+        if (!autoFillData.bastidor && exp['BASTIDOR']) autoFillData.bastidor = exp['BASTIDOR'];
+      }
+      html += `
+        <div style="padding:10px 14px;background:#FEF9E7;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:#7D6608;margin-bottom:4px">📋 EXPEDIENTES${expTaller} ${estado?'· '+estado:''}</div>
+          ${marcaMod ? `<div style="font-size:14px;font-weight:600">${marcaMod}</div>` : ''}
+          <div style="font-size:12px;color:var(--text-muted)">${[propietario, tel].filter(Boolean).join(' · ')}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${[aseg, perito, siniestro?'Sin: '+siniestro:'', or?'OR: '+or:''].filter(Boolean).join(' · ')}</div>
+        </div>`;
+    }
+
+    // Resultados Trello
+    trelloCards.slice(0,3).forEach(card => {
+      const p = parseTrelloName(card.name);
+      html += `
+        <div style="padding:10px 14px;background:#EBF5FB;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;color:#1A5276;margin-bottom:4px">🃏 TRELLO</div>
+          <div style="font-size:13px;font-weight:500">${card.name}</div>
+          ${card.desc ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:pre-wrap;max-height:48px;overflow:hidden">${card.desc.substring(0,120)}</div>` : ''}
+        </div>`;
+      // Si no hay dato de Sheets ni Expedientes, usar Trello para autorellenar lo que se pueda
+      if (!autoFillData && p.marcaModelo) {
+        const mm = p.marcaModelo.split(' ');
+        autoFillData = { marca: mm[0]||'', modelo: mm.slice(1).join(' ')||'', bastidor: p.bastidor, cliente:'', telefono:'', or: p.or, aseguradora:'', peritoNombre:'', peritoTel:'', peritoEmail:'' };
+      }
+    });
+
+    html += `</div>`;
+
+    // Botón usar datos
+    if (autoFillData) {
+      html += `<button onclick="aplicarDatosVehiculo()" type="button"
+        style="width:100%;margin-top:8px;padding:10px;background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer">
+        ✓ Usar estos datos
+      </button>`;
+    }
+  }
+
+  if (res) res.innerHTML = html;
+  _matSearchData = autoFillData;
+
+  // Si hay datos de Sheets, autorellenar directo
+  if (sheetsResult) aplicarDatosVehiculo();
+}
+
+let _matSearchData = null;
+
+function aplicarDatosVehiculo() {
+  const d = _matSearchData;
+  if (!d) return;
+  setVal('f-marca',    d.marca     || '');
+  setVal('f-modelo',   d.modelo    || '');
+  setVal('f-bastidor', d.bastidor  || '');
+  setVal('f-clinombre',d.cliente   || '');
+  setVal('f-clitel',   d.telefono  || '');
+  if (d.or)           setVal('f-or', d.or);
+  if (d.aseguradora)  setVal('f-aseguradora', d.aseguradora);
+  if (d.peritoNombre) { setVal('f-perito', d.peritoNombre); setVal('f-perito-tel', d.peritoTel||''); setVal('f-perito-email', d.peritoEmail||''); }
+  // Marcar campos como rellenados
+  ['f-marca','f-modelo','f-bastidor','f-clinombre','f-clitel'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (inp && inp.value) { inp.style.background = '#f0fff4'; }
+  });
+  formMatData = d;
+  const sec = document.getElementById('veh-section');
+  if (sec) sec.style.display = 'block';
+  const hint = document.getElementById('mat-hint');
+  if (hint) { hint.textContent = `✓ Datos cargados desde ${d.semana ? 'Sheets · última cita '+d.semana : (d._source || 'Trello')}`; hint.style.color = 'var(--green)'; }
+  const res = document.getElementById('mat-search-results');
+  if (res) res.innerHTML = '';
 }
 
 function buscarMat(val) {
@@ -1043,7 +1455,10 @@ async function confirmarCita() {
   const hcab   = parseFloat(getVal('f-hcab'))  || 0;
   const hpres  = parseFloat(getVal('f-hpres')) || 0;
   const fechaEntrada = getVal('f-fecha') || isoDate(new Date());
-  const aseguradora = getVal('f-aseguradora');
+  const aseguradora  = getVal('f-aseguradora');
+  const peritoNombre = getVal('f-perito');
+  const peritoTel    = getVal('f-perito-tel');
+  const peritoEmail  = getVal('f-perito-email');
   const movilidad = document.getElementById('f-movilidad')?.checked || false;
   const fechaMovInicio = movilidad ? (getVal('f-mov-inicio') || '') : '';
   const fechaMovFin    = movilidad ? (getVal('f-mov-fin')    || '') : '';
@@ -1072,7 +1487,8 @@ async function confirmarCita() {
     hChapa: hc, hPintura: hp, hCabina: hcab, hPresupuestadas: hpres,
     baremo, prio: getVal('f-prio'),
     recambios: document.getElementById('f-rec')?.checked || false,
-    aseguradora, movilidad, fechaMovInicio, fechaMovFin,
+    aseguradora, peritoNombre, peritoTel, peritoEmail,
+    movilidad, fechaMovInicio, fechaMovFin,
     valorHora: 0, nota,
     trelloCardId: null,
     fechaCreacion: new Date().toISOString(),
@@ -1080,6 +1496,7 @@ async function confirmarCita() {
   };
 
   await sheetsSave(cita);
+  if (cita.peritoNombre) savePerito(cita.peritoNombre, cita.peritoTel, cita.peritoEmail);
   formMat = ''; formMatData = null;
   showTrelloPrompt(cita);
 }
@@ -1409,23 +1826,71 @@ async function trelloSync() {
   updateSyncStatus(); render();
 }
 
+// Devuelve el lunes de la semana ISO (semana "2026-W24") o de fechaEntrada
+function getMondayOfSemana(semana, fechaEntrada) {
+  if (semana && /^\d{4}-W\d{2}$/.test(semana)) {
+    const [yr, wk] = semana.split('-W').map(Number);
+    const jan4 = new Date(yr, 0, 4);
+    const startW1 = new Date(jan4);
+    startW1.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1));
+    const monday = new Date(startW1);
+    monday.setDate(startW1.getDate() + (wk - 1) * 7);
+    return monday;
+  }
+  if (fechaEntrada) {
+    const d = new Date(fechaEntrada + 'T00:00:00');
+    const dow = d.getDay() || 7;
+    d.setDate(d.getDate() - dow + 1);
+    return d;
+  }
+  const d = new Date();
+  const dow = d.getDay() || 7;
+  d.setDate(d.getDate() - dow + 1);
+  return d;
+}
+
+// Busca o crea la lista de Trello con nombre DD/MM/YYYY del lunes de la semana
+async function trelloFindOrCreateWeekList(semana, fechaEntrada) {
+  const monday = getMondayOfSemana(semana, fechaEntrada);
+  const dd = String(monday.getDate()).padStart(2,'0');
+  const mm = String(monday.getMonth()+1).padStart(2,'0');
+  const yyyy = monday.getFullYear();
+  const listName = `${dd}/${mm}/${yyyy}`;
+  const lists = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/lists?fields=name,id`);
+  const existing = lists.find(l => l.name.trim() === listName);
+  if (existing) return existing.id;
+  // No existe → crearla al final (más reciente a la derecha)
+  const newList = await trelloAPI('/lists', 'POST', { name: listName, idBoard: TRELLO_BOARD_ID, pos: 'bottom' });
+  return newList.id;
+}
+
+const _trelloCreating = new Set(); // bloqueo anti-duplicado por ID de cita
+
 async function trelloCrearTarjeta(t) {
   try {
-    const { map } = await trelloEnsureLists();
-    const listId = map[t.estado] || map['espera'];
+    // 1. Si ya tiene ID asignado → no crear de nuevo
+    if (t.trelloCardId) {
+      trelloStatus = `✓ Tarjeta ya existe (${t.matricula})`; updateSyncStatus(); return;
+    }
+    // 2. Bloqueo: si ya hay una petición en curso para esta cita, abortar
+    if (_trelloCreating.has(t.id)) {
+      trelloStatus = `⏳ Ya creando tarjeta (${t.matricula})…`; updateSyncStatus(); return;
+    }
+    _trelloCreating.add(t.id);
+    const listId = await trelloFindOrCreateWeekList(t.semana, t.fechaEntrada);
     if (!listId) return;
     const mat = t.matricula.toUpperCase();
     const allCards = await trelloAPI(`/boards/${TRELLO_BOARD_ID}/cards?fields=name,id,idList`);
     const orNum = t.or ? t.or.toString().replace(/^OR/i,'') : null;
     const byMat = allCards.filter(c => c.name.toUpperCase().includes(mat));
     if (byMat.length > 0) {
-      let exactMatch = null;
-      if (orNum) exactMatch = byMat.find(c => { const m = c.name.match(/OR(\d+)/i); return m && m[1] === orNum; });
-      if (exactMatch) {
-        t.trelloCardId = exactMatch.id; sheetsSave(t);
-        if (exactMatch.idList !== listId) await trelloAPI(`/cards/${exactMatch.id}`, 'PUT', { idList: listId });
-        trelloStatus = `✓ Tarjeta vinculada (${mat})`; updateSyncStatus(); return;
-      }
+      // Buscar por OR primero, si no hay OR o no coincide → usar la primera por matrícula
+      let match = null;
+      if (orNum) match = byMat.find(c => { const m = c.name.match(/OR(\d+)/i); return m && m[1] === orNum; });
+      if (!match) match = byMat[0]; // vincula por matrícula si solo hay una o como fallback
+      t.trelloCardId = match.id; sheetsSave(t);
+      if (match.idList !== listId) await trelloAPI(`/cards/${match.id}`, 'PUT', { idList: listId });
+      trelloStatus = `✓ Tarjeta vinculada (${mat})`; updateSyncStatus(); return;
     }
     const orSuffix = t.or ? ` - OR${t.or}` : '';
     const name = `${mat} - ${t.marca} ${t.modelo} - ${t.bastidor||'VIN'}${orSuffix}`;
@@ -1439,6 +1904,8 @@ async function trelloCrearTarjeta(t) {
       `Chapa: ${t.hChapa}h | Pintura: ${t.hPintura}h | Cabina: ${t.hCabina}h`,
       t.hPresupuestadas ? `H. Presup.: ${t.hPresupuestadas}h` : '',
       `Baremo: ${barLbl[t.baremo]||t.baremo} | Prioridad: ${t.prio}`,
+      t.aseguradora ? `🏢 Aseguradora: ${t.aseguradora}` : '',
+      t.peritoNombre ? `🕵️ Perito: ${t.peritoNombre}${t.peritoTel?' · '+t.peritoTel:''}${t.peritoEmail?' · '+t.peritoEmail:''}` : '',
       t.nota ? `Nota: ${t.nota}` : '',
       `Semana: ${t.semana}`,
       movStr,
@@ -1449,7 +1916,13 @@ async function trelloCrearTarjeta(t) {
     const hora = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
     trelloStatus = `✓ Tarjeta creada · ${hora}`;
     updateSyncStatus();
-  } catch(e) { console.error('Trello crear tarjeta:', e); trelloStatus = `⚠ Trello: ${e.message}`; updateSyncStatus(); }
+  } catch(e) {
+    console.error('Trello crear tarjeta:', e);
+    trelloStatus = `⚠ Trello: ${e.message}`;
+    updateSyncStatus();
+  } finally {
+    _trelloCreating.delete(t.id); // liberar bloqueo siempre
+  }
 }
 
 async function trelloMoverTarjeta(t) {
